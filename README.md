@@ -1,5 +1,7 @@
 # E2: Workshop stations
 
+Max Marinescu
+
 Install [Deno](https://docs.deno.com/runtime/getting_started/installation/) (CI uses 2.9.7) and [Git](https://git-scm.com/downloads). Clone your own course repository, open a terminal in that folder, and run `deno task setup` once. Run `deno task dev` and open the local URL printed in the terminal (normally `http://localhost:3000`). Run `deno task ci` for formatting, lint, strict type checks, and a production build.
 
 `index.html` loads three independent entrypoints: `src/allocation.ts`, `src/rover.ts`, and `src/counter.ts`. Shared presentation is in `src/style.css`. Assignment instructions are on Canvas. Rover Run/Clear controls are intentionally disabled in the baseline.
