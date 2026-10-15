@@ -11,17 +11,26 @@ const supplyPerProducer = 3;
 const sharedNeed = 6;
 let producers = 2;
 
-function getSupplyProduction(assignedCrew: number) {
-  return assignedCrew * supplyPerProducer;
+type ProvisioningShift = {
+  assignedPeople: number;
+  supplyOutput: number;
+  sharedNeed: number;
+  balance: number;
+};
+
+function prepareProvisioningShift(assignedPeople: number): ProvisioningShift {
+  const supplyOutput = assignedPeople * supplyPerProducer;
+  return {
+    assignedPeople,
+    supplyOutput,
+    sharedNeed,
+    balance: supplyOutput - sharedNeed,
+  };
 }
 
-function getProvisioningBalance(assignedCrew: number) {
-  return getSupplyProduction(assignedCrew) - sharedNeed;
-}
-
-function drawCrewAssignmentSlots(assignedCrew: number) {
+function drawCrewAssignmentSlots(assignedPeople: number) {
   for (let slotIndex = 0; slotIndex < totalCrew; slotIndex++) {
-    const isAssignedToSupply = slotIndex < assignedCrew;
+    const isAssignedToSupply = slotIndex < assignedPeople;
     ctx.fillStyle = isAssignedToSupply ? "#27766b" : "#c9d2c9";
     ctx.fillRect(18 + slotIndex * 45, 16, 36, 36);
     ctx.fillStyle = isAssignedToSupply ? "#ffffff" : "#233e43";
@@ -44,26 +53,37 @@ function drawProvisioningBar(
   ctx.fillRect(18, barY, amount * 14, 20);
 }
 
-function updateDisplay() {
-  const supplyProduction = getSupplyProduction(producers);
-  const provisioningBalance = getProvisioningBalance(producers);
+function renderAllocationDisplay(shift: ProvisioningShift) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawCrewAssignmentSlots(producers);
+  drawCrewAssignmentSlots(shift.assignedPeople);
   ctx.fillStyle = "#233e43";
   ctx.font = "14px system-ui";
   ctx.fillText(
-    `Crew on supply duty: ${producers} / ${totalCrew}`,
+    `Crew on supply duty: ${shift.assignedPeople} / ${totalCrew}`,
     18,
     76,
   );
-  drawProvisioningBar("Supply output", supplyProduction, "#27766b", 102, 110);
-  drawProvisioningBar("Shared need", sharedNeed, "#a44d23", 154, 162);
+  drawProvisioningBar(
+    "Supply output",
+    shift.supplyOutput,
+    "#27766b",
+    102,
+    110,
+  );
+  drawProvisioningBar("Shared need", shift.sharedNeed, "#a44d23", 154, 162);
+}
+
+function renderAllocationStats(shift: ProvisioningShift) {
   readout.textContent =
-    `Assigned: ${producers}/${totalCrew} · Supply output: ${supplyProduction}
-    · Shared need: ${sharedNeed} · Balance: ${
-      provisioningBalance > 0 ? "+" : ""
-    }
-    ${provisioningBalance}`;
+    `Assigned: ${shift.assignedPeople}/${totalCrew} · Supply output: ${shift.supplyOutput} · Shared need: ${shift.sharedNeed} · Balance: ${
+      shift.balance > 0 ? "+" : ""
+    }${shift.balance}`;
+}
+
+function updateDisplay() {
+  const shift = prepareProvisioningShift(producers);
+  renderAllocationDisplay(shift);
+  renderAllocationStats(shift);
 }
 
 document.querySelector<HTMLButtonElement>("#allocation-less")!.onclick = () => {
