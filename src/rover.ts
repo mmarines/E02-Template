@@ -3,10 +3,15 @@ export {};
 const canvas = document.querySelector<HTMLCanvasElement>("#rover-canvas")!;
 const ctx = canvas.getContext("2d")!;
 const readout = document.querySelector<HTMLParagraphElement>("#rover-readout")!;
+const pendingList = document.querySelector<HTMLOListElement>("#rover-pending")!;
+const queueStatus = document.querySelector<HTMLParagraphElement>(
+  "#rover-queue-status",
+)!;
 
 let x = 2;
 let y = 2;
 let directionIndex = 0;
+let pendingCommands: Command[] = [];
 
 const gridMin = 0;
 const gridMax = 4;
@@ -29,21 +34,55 @@ function clampToGrid(value: number) {
 }
 
 type Command =
-  | { type: "forward" }
-  | { type: "right" };
+  | { type: "Forward" }
+  | { type: "Right" };
 
 function runCommand(command: Command) {
-  if (command.type === "forward") {
+  if (command.type === "Forward") {
     const currentDirection = directions[directionIndex];
     x = clampToGrid(x + currentDirection.X);
     y = clampToGrid(y + currentDirection.Y);
   }
 
-  if (command.type === "right") {
+  if (command.type === "Right") {
     directionIndex = (directionIndex + 1) % directions.length;
   }
 
   drawRover();
+}
+
+function renderQueue() {
+  pendingList.replaceChildren();
+  pendingCommands.forEach((command) => {
+    const item = document.createElement("li");
+    item.textContent = command.type;
+    pendingList.append(item);
+  });
+
+  const hasPendingCommands = pendingCommands.length > 0;
+  queueStatus.textContent = hasPendingCommands
+    ? `Queued: ${pendingCommands.length} command${
+      pendingCommands.length === 1 ? "" : "s"
+    }`
+    : "Empty";
+}
+
+function queueCommand(command: Command) {
+  pendingCommands.push(command);
+  renderQueue();
+}
+
+function runQueuedCommands() {
+  while (pendingCommands.length > 0) {
+    const command = pendingCommands.shift()!;
+    runCommand(command);
+  }
+  renderQueue();
+}
+
+function clearQueuedCommands() {
+  pendingCommands = [];
+  renderQueue();
 }
 
 function drawRover() {
@@ -73,15 +112,23 @@ function drawRover() {
 }
 
 document.querySelector<HTMLButtonElement>("#rover-forward")!.onclick = () => {
-  runCommand({ type: "forward" });
+  queueCommand({ type: "Forward" });
 };
 document.querySelector<HTMLButtonElement>("#rover-right")!.onclick = () => {
-  runCommand({ type: "right" });
+  queueCommand({ type: "Right" });
+};
+document.querySelector<HTMLButtonElement>("#rover-run")!.onclick = () => {
+  runQueuedCommands();
+};
+document.querySelector<HTMLButtonElement>("#rover-clear")!.onclick = () => {
+  clearQueuedCommands();
 };
 document.querySelector<HTMLButtonElement>("#rover-reset")!.onclick = () => {
   x = 2;
   y = 2;
   directionIndex = 0;
+  clearQueuedCommands();
   drawRover();
 };
+renderQueue();
 drawRover();
