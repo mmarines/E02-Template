@@ -18,6 +18,12 @@ type ProvisioningShift = {
   balance: number;
 };
 
+type ProvisioningRow = {
+  label: "Production" | "Consumption";
+  amount: number;
+  color: string;
+};
+
 function prepareProvisioningShift(assignedPeople: number): ProvisioningShift {
   const supplyOutput = assignedPeople * supplyPerProducer;
   return {
@@ -26,6 +32,21 @@ function prepareProvisioningShift(assignedPeople: number): ProvisioningShift {
     sharedNeed,
     balance: supplyOutput - sharedNeed,
   };
+}
+
+function getProvisioningRows(shift: ProvisioningShift): ProvisioningRow[] {
+  return [
+    {
+      label: "Production",
+      amount: shift.supplyOutput,
+      color: "#27766b",
+    },
+    {
+      label: "Consumption",
+      amount: shift.sharedNeed,
+      color: "#a44d23",
+    },
+  ];
 }
 
 function drawCrewAssignmentSlots(assignedPeople: number) {
@@ -39,21 +60,20 @@ function drawCrewAssignmentSlots(assignedPeople: number) {
   }
 }
 
-function drawProvisioningBar(
-  label: string,
-  amount: number,
-  color: string,
-  labelY: number,
-  barY: number,
-) {
-  ctx.fillStyle = "#233e43";
-  ctx.font = "14px system-ui";
-  ctx.fillText(`${label}: ${amount}`, 18, labelY);
-  ctx.fillStyle = color;
-  ctx.fillRect(18, barY, amount * 14, 20);
+function drawProvisioningRows(rows: ProvisioningRow[]) {
+  rows.forEach((row, rowIndex) => {
+    const rowLabelY = 102 + rowIndex * 52;
+    const rowBarY = 110 + rowIndex * 52;
+    ctx.fillStyle = "#233e43";
+    ctx.font = "14px system-ui";
+    ctx.fillText(`${row.label}: ${row.amount}`, 18, rowLabelY);
+    ctx.fillStyle = row.color;
+    ctx.fillRect(18, rowBarY, row.amount * 14, 20);
+  });
 }
 
 function renderAllocationDisplay(shift: ProvisioningShift) {
+  const rows = getProvisioningRows(shift);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawCrewAssignmentSlots(shift.assignedPeople);
   ctx.fillStyle = "#233e43";
@@ -63,19 +83,12 @@ function renderAllocationDisplay(shift: ProvisioningShift) {
     18,
     76,
   );
-  drawProvisioningBar(
-    "Supply output",
-    shift.supplyOutput,
-    "#27766b",
-    102,
-    110,
-  );
-  drawProvisioningBar("Shared need", shift.sharedNeed, "#a44d23", 154, 162);
+  drawProvisioningRows(rows);
 }
 
 function renderAllocationStats(shift: ProvisioningShift) {
   readout.textContent =
-    `Assigned: ${shift.assignedPeople}/${totalCrew} · Supply output: ${shift.supplyOutput} · Shared need: ${shift.sharedNeed} · Balance: ${
+    `Assigned: ${shift.assignedPeople}/${totalCrew} · Production: ${shift.supplyOutput} · Consumption: ${shift.sharedNeed} · Balance: ${
       shift.balance > 0 ? "+" : ""
     }${shift.balance}`;
 }
