@@ -11,6 +11,7 @@ const diagnostic = document.querySelector<HTMLParagraphElement>(
 )!;
 
 const shieldCapacity = 10;
+const shieldEvents = new EventTarget();
 let count = 0;
 let panel: HTMLParagraphElement | null = null;
 let panelUpdates = 0;
@@ -28,6 +29,18 @@ function prepareShieldSnapshot(currentCharge: number): Shield {
     missingCharge: shieldCapacity - currentCharge,
   };
 }
+
+function announceShieldChange() {
+  const shield = prepareShieldSnapshot(count);
+  shieldEvents.dispatchEvent(
+    new CustomEvent("shield-change", { detail: shield }),
+  );
+}
+
+shieldEvents.addEventListener("shield-change", (event) => {
+  const shield = (event as CustomEvent<Shield>).detail;
+  drawMeter(shield);
+});
 
 function drawMeter(shield: Shield) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -58,9 +71,8 @@ function setCount(next: number) {
   const bounded = Math.max(0, Math.min(shieldCapacity, next));
   if (bounded === count) return;
   count = bounded;
-  const shield = prepareShieldSnapshot(count);
-  drawMeter(shield);
-  if (panel) updateStats(shield);
+  announceShieldChange();
+  if (panel) updateStats(prepareShieldSnapshot(count));
 }
 
 document.querySelector<HTMLButtonElement>("#counter-less")!.onclick = () => {
@@ -83,4 +95,4 @@ document.querySelector<HTMLButtonElement>("#counter-close")!.onclick = () => {
   panel.remove();
   panel = null;
 };
-drawMeter(prepareShieldSnapshot(count));
+announceShieldChange();
